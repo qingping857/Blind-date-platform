@@ -48,4 +48,19 @@ export const registerSchema = baseRegisterSchema.extend({
 });
 
 // 后端使用的注册验证schema（使用基础schema）
-export const registerValidationSchema = baseRegisterSchema; 
+export const registerValidationSchema = baseRegisterSchema;
+
+export const userProfileSchema = z.object({
+  nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
+  gender: z.enum(['male', 'female'], { required_error: '请选择性别' }),
+  age: z.number().min(18, '年龄必须大于18岁').max(100, '年龄必须小于100岁'),
+  city: z.string().min(2, '请输入有效的城市名'),
+  mbti: z.string().optional(),
+  university: z.string().min(2, '请输入有效的学校名称'),
+  major: z.string().optional(),
+  grade: z.string().min(1, '请选择年级'),
+  selfIntro: z.string().min(10, '自我介绍至少10个字符').max(100, '自我介绍最多100个字符'),
+  expectation: z.string().min(10, '期待描述至少10个字符').max(100, '期待描述最多100个字符'),
+  wechat: z.string().min(6, '请输入有效的微信号'),
+  photos: z.array(z.any()).min(1, '请至少上传1张照片').max(3, '最多上传3张照片'),
+}); 
