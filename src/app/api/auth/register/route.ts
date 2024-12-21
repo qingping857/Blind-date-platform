@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { registerSchema } from '@/lib/validations/user';
+import { registerValidationSchema } from '@/lib/validations/user';
 import connectDB from '@/lib/db';
 import { User } from '@/models/user';
 import { uploadPhoto } from '@/lib/upload';
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!verifyCode(email, verificationCode)) {
+    const isCodeValid = await verifyCode(email, verificationCode);
+    if (!isCodeValid) {
       return NextResponse.json(
         { error: '验证码无效或已过期' },
         { status: 400 }
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
     
     // 验证其他数据
     console.log('验证表单数据...');
-    const validatedData = registerSchema.parse({
+    const validatedData = registerValidationSchema.parse({
       ...body,
       photos: photoUrls,
       age: parseInt(body.age as string, 10)
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
     const user = await User.create({
       ...validatedData,
       password: hashedPassword,
-      status: 'pending',
+      status: 'approved',
       isEmailVerified: true // 验证码验证通过，直接设置为已验证
     });
     console.log('用户创建成功, ID:', user._id);
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
     console.log('注册流程完成');
     return NextResponse.json({
       ...userWithoutPassword,
-      message: '注册成功！'
+      message: '��册成功！'
     }, { status: 201 });
   } catch (error: any) {
     console.error('注册失败:', error);

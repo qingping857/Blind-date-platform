@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, VERIFICATION_ANSWERS } from '@/lib/validations/user';
@@ -17,6 +18,7 @@ const GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研
 const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
 
 export function RegisterForm() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isSendingCode, setIsSendingCode] = useState(false);
@@ -93,12 +95,18 @@ export function RegisterForm() {
 
       toast({
         title: '注册成功',
-        description: '请等待管理员审核您的账号',
+        description: '请前往登录页面进行登录',
+        duration: 5000,
       });
 
       // 清空表单
       form.reset();
       setSelectedPhotos([]);
+      
+      // 5秒后跳转到登录页面
+      setTimeout(() => {
+        router.push('/auth?tab=login');
+      }, 5000);
     } catch (error: any) {
       console.error('注册失败:', error);
       toast({
@@ -258,7 +266,7 @@ export function RegisterForm() {
               <Label htmlFor="gender">性别</Label>
               <Select onValueChange={(value) => form.setValue('gender', value as 'male' | 'female')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择性别" />
+                  <SelectValue placeholder="��选择性别" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">男</SelectItem>

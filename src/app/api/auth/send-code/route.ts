@@ -2,9 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateVerificationCode, sendVerificationCode } from '@/lib/mail';
 import connectDB from '@/lib/db';
 import { User } from '@/models/user';
-
-// 存储邮箱验证码的Map
-const verificationCodes = new Map<string, { code: string; expires: number }>();
+import { VerificationCode } from '@/models/verification-code';
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +19,7 @@ export async function POST(req: Request) {
 
     // 检查邮箱是否已被注册
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser && existingUser.isEmailVerified) {
       return NextResponse.json(
         { error: '该邮箱已被注册' },
         { status: 400 }
@@ -31,20 +29,20 @@ export async function POST(req: Request) {
     // 生成验证码
     const code = generateVerificationCode();
     // 设置10分钟过期
-    const expires = Date.now() + 10 * 60 * 1000;
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     // 存储验证码
-    verificationCodes.set(email, { code, expires });
+    await VerificationCode.findOneAndUpdate(
+      { email },
+      { 
+        code,
+        expires,
+      },
+      { upsert: true, new: true }
+    );
 
     // 发送验证码邮件
     await sendVerificationCode(email, code);
-
-    // 清理过期的验证码
-    for (const [key, value] of verificationCodes.entries()) {
-      if (value.expires < Date.now()) {
-        verificationCodes.delete(key);
-      }
-    }
 
     return NextResponse.json({ message: '验证码已发送' });
   } catch (error: any) {
@@ -57,16 +55,21 @@ export async function POST(req: Request) {
 }
 
 // 验证码校验函数
-export function verifyCode(email: string, code: string): boolean {
-  const storedData = verificationCodes.get(email);
-  if (!storedData) {
+export async function verifyCode(email: string, code: string): Promise<boolean> {
+  await connectDB();
+  
+  const verificationCode = await VerificationCode.findOne({
+    email,
+    code,
+    expires: { $gt: new Date() }
+  });
+
+  if (!verificationCode) {
     return false;
   }
 
-  if (storedData.expires < Date.now()) {
-    verificationCodes.delete(email);
-    return false;
-  }
+  // 验证成功后删除验证码
+  await VerificationCode.deleteOne({ _id: verificationCode._id });
 
-  return storedData.code === code;
+  return true;
 } 

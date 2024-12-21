@@ -13,11 +13,11 @@ export const VERIFICATION_ANSWERS = [
   "越参与，越收获"
 ] as const;
 
-export const registerSchema = z.object({
+// 基础注册schema（不包含密码确认）
+const baseRegisterSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
   verificationCode: z.string().length(6, '验证码必须是6位数字'),
   password: z.string().min(6, '密码至少6个字符'),
-  confirmPassword: z.string(),
   nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
   gender: z.enum(['male', 'female'], { required_error: '请选择性别' }),
   age: z.number().min(18, '年龄必须大于18岁').max(100, '年龄必须小于100岁'),
@@ -37,7 +37,15 @@ export const registerSchema = z.object({
         message: '请输入开营仪式上的十句话中的任意一句，需要完全匹配'
       }
     ),
+});
+
+// 前端使用的完整注册schema（包含密码确认）
+export const registerSchema = baseRegisterSchema.extend({
+  confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "两次输���的密码不一致",
+  message: "两次输入的密码不一致",
   path: ["confirmPassword"],
-}); 
+});
+
+// 后端使用的注册验证schema（使用基础schema）
+export const registerValidationSchema = baseRegisterSchema; 

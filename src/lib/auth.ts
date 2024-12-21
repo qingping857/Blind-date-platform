@@ -19,25 +19,33 @@ export const authOptions: NextAuthOptions = {
           }
 
           await connectDB();
+          console.log('尝试登录用户:', credentials.email);
 
           const user = await User.findOne({ email: credentials.email });
           if (!user) {
+            console.log('用户不存在');
             throw new Error('邮箱或密码错误');
           }
+          console.log('找到用户:', user.email, '状态:', user.status, '邮箱验证:', user.isEmailVerified);
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
           if (!isPasswordValid) {
+            console.log('密码不正确');
             throw new Error('邮箱或密码错误');
           }
+          console.log('密码验证通过');
 
           if (!user.isEmailVerified) {
+            console.log('邮箱未验证');
             throw new Error('请先验证您的邮箱后再登录');
           }
 
           if (user.status !== 'approved') {
+            console.log('账号未审核通过');
             throw new Error('您的账号正在审核中，请等待审核通过后再登录');
           }
 
+          console.log('登录成功');
           return {
             id: user._id.toString(),
             email: user.email,
