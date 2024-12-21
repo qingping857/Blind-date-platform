@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!user.isEmailVerified) {
-            throw new Error('请先验证您的邮箱后��登录');
+            throw new Error('请先验证您的邮箱后再登录');
           }
 
           if (user.status !== 'approved') {
@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error: any) {
           console.error('认证过程中发生错误:', error);
-          throw error;
+          throw new Error(error.message || '登录失败，请稍后重试');
         }
       }
     })

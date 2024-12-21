@@ -7,35 +7,34 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+// 使用我们定义的全局类型
+if (!global.mongoose) {
+  global.mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
+  if (global.mongoose.conn) {
+    return global.mongoose.conn;
   }
 
-  if (!cached.promise) {
+  if (!global.mongoose.promise) {
     const opts = {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+    global.mongoose.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
       return mongoose;
     });
   }
 
   try {
-    cached.conn = await cached.promise;
+    global.mongoose.conn = await global.mongoose.promise;
   } catch (e) {
-    cached.promise = null;
+    global.mongoose.promise = null;
     throw e;
   }
 
-  return cached.conn;
+  return global.mongoose.conn;
 }
 
 export default connectDB; 

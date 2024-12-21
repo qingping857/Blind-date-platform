@@ -36,4 +36,5 @@ export interface RegisterFormData extends UserBasicInfo {
   confirmPassword: string;
   photos: File[];
   verificationAnswer: string;
+  verificationCode: string;
 } 

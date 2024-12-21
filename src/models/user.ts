@@ -105,7 +105,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // 添加索引
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ status: 1 });
 userSchema.index({ createdAt: -1 });
 

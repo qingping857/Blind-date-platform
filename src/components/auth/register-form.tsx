@@ -50,7 +50,10 @@ export function RegisterForm() {
 
       // 创建FormData对象
       const formData = new FormData();
-      console.log('表单数据:', Object.fromEntries(data));
+      console.log('表单数据:', Object.entries(data).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: key === 'password' || key === 'confirmPassword' ? '***' : value
+      }), {}));
       
       // 添加照片
       selectedPhotos.forEach(photo => {
