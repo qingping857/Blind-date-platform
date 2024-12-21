@@ -229,7 +229,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label>微信号</Label>
               <Input 
-                placeholder="输入微信号" 
+                placeholder="输入微信" 
                 {...form.register("wechat")}
                 error={form.formState.errors.wechat?.message}
               />
@@ -243,7 +243,8 @@ export default function ProfilePage() {
           
           <div className="grid grid-cols-2 gap-4">
             {[0, 1, 2].map((index) => {
-              const photo = form.watch("photos")[index];
+              const photos = form.watch("photos") || [];
+              const photo = photos[index];
               
               return (
                 <div key={index} className="relative aspect-square group">
@@ -259,8 +260,9 @@ export default function ProfilePage() {
                         size="sm"
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => {
-                          const photos = form.watch("photos").filter((_, i) => i !== index);
-                          form.setValue("photos", photos);
+                          const currentPhotos = form.watch("photos") || [];
+                          const newPhotos = currentPhotos.filter((_, i) => i !== index);
+                          form.setValue("photos", newPhotos);
                         }}
                       >
                         删除
@@ -275,9 +277,10 @@ export default function ProfilePage() {
                           // TODO: 实现照片上传
                           const url = prompt("输入照片URL（临时使用）");
                           if (url) {
-                            const photos = [...form.watch("photos")];
-                            photos[index] = url;
-                            form.setValue("photos", photos);
+                            const currentPhotos = form.watch("photos") || [];
+                            const newPhotos = [...currentPhotos];
+                            newPhotos[index] = url;
+                            form.setValue("photos", newPhotos);
                           }
                         }}
                       >
