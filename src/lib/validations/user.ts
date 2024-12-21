@@ -15,6 +15,7 @@ export const VERIFICATION_ANSWERS = [
 
 export const registerSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
+  verificationCode: z.string().length(6, '验证码必须是6位数字'),
   password: z.string().min(6, '密码至少6个字符'),
   confirmPassword: z.string(),
   nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
@@ -37,6 +38,6 @@ export const registerSchema = z.object({
       }
     ),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "两次输入的密码不一致",
+  message: "两次输���的密码不一致",
   path: ["confirmPassword"],
 }); 

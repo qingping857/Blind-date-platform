@@ -19,11 +19,14 @@ const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENF
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: '',
+      verificationCode: '',
       password: '',
       confirmPassword: '',
       nickname: '',
@@ -43,14 +46,17 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setIsLoading(true);
+      console.log('开始注册流程');
 
       // 创建FormData对象
       const formData = new FormData();
+      console.log('表单数据:', Object.fromEntries(data));
       
       // 添加照片
       selectedPhotos.forEach(photo => {
         formData.append('photos', photo);
       });
+      console.log('已添加照片数量:', selectedPhotos.length);
       
       // 添加其他字段
       Object.entries(data).forEach(([key, value]) => {
@@ -59,13 +65,24 @@ export function RegisterForm() {
         }
       });
 
+      console.log('发送注册请求...');
       // 发送注册请求
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         body: formData,
       });
 
-      const result = await response.json();
+      console.log('收到响应:', response.status, response.statusText);
+      const responseText = await response.text();
+      console.log('响应内容:', responseText);
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('JSON解析失败:', e);
+        throw new Error('服务器响应格式错误');
+      }
 
       if (!response.ok) {
         throw new Error(result.error || '注册失败');
@@ -80,7 +97,7 @@ export function RegisterForm() {
       form.reset();
       setSelectedPhotos([]);
     } catch (error: any) {
-      console.error(error);
+      console.error('注册失败:', error);
       toast({
         title: '注册失败',
         description: error.message || '发生未知错误，请稍后重试',
@@ -88,6 +105,61 @@ export function RegisterForm() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 发送验证码
+  const handleSendCode = async () => {
+    try {
+      const email = form.getValues('email');
+      if (!email) {
+        toast({
+          title: '发送失败',
+          description: '请先输入邮箱地址',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsSendingCode(true);
+      const response = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '发送验证码失败');
+      }
+
+      toast({
+        title: '发送成功',
+        description: '验证码已发送到您的邮箱',
+      });
+
+      // 开始倒计时
+      setCountdown(60);
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error: any) {
+      toast({
+        title: '发送失败',
+        description: error.message || '发送验证码失败，请稍后重试',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingCode(false);
     }
   };
 
@@ -99,20 +171,46 @@ export function RegisterForm() {
       </CardHeader>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
-          {/* 基本信息 */}
+          {/* 邮箱和验证码 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">邮箱</Label>
-              <Input
-                {...form.register('email')}
-                id="email"
-                type="email"
-                placeholder="请输入邮箱"
-              />
+              <div className="flex gap-2">
+                <Input
+                  {...form.register('email')}
+                  id="email"
+                  type="email"
+                  placeholder="请输入邮箱"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSendCode}
+                  disabled={isSendingCode || countdown > 0}
+                >
+                  {countdown > 0 ? `${countdown}秒后重试` : '发送验证码'}
+                </Button>
+              </div>
               {form.formState.errors.email && (
                 <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
               )}
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="verificationCode">验证码</Label>
+              <Input
+                {...form.register('verificationCode')}
+                id="verificationCode"
+                placeholder="请输入验证码"
+                maxLength={6}
+              />
+              {form.formState.errors.verificationCode && (
+                <p className="text-sm text-red-500">{form.formState.errors.verificationCode.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* 昵称和密码 */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nickname">昵称</Label>
               <Input
@@ -124,9 +222,6 @@ export function RegisterForm() {
                 <p className="text-sm text-red-500">{form.formState.errors.nickname.message}</p>
               )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>
               <Input
@@ -139,18 +234,20 @@ export function RegisterForm() {
                 <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">确认密码</Label>
-              <Input
-                {...form.register('confirmPassword')}
-                id="confirmPassword"
-                type="password"
-                placeholder="请再次输入密码"
-              />
-              {form.formState.errors.confirmPassword && (
-                <p className="text-sm text-red-500">{form.formState.errors.confirmPassword.message}</p>
-              )}
-            </div>
+          </div>
+
+          {/* 确认密码 */}
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">确认密码</Label>
+            <Input
+              {...form.register('confirmPassword')}
+              id="confirmPassword"
+              type="password"
+              placeholder="请再次输入密码"
+            />
+            {form.formState.errors.confirmPassword && (
+              <p className="text-sm text-red-500">{form.formState.errors.confirmPassword.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">

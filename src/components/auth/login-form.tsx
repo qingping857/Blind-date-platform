@@ -34,31 +34,37 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
+      console.log('开始登录流程');
+
       const result = await signIn('credentials', {
         email: data.email,
         password: data.password,
         redirect: false,
+        callbackUrl: '/square',
       });
 
-      if (result?.error) {
-        toast({
-          title: '登录失败',
-          description: result.error,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: '登录成功',
-          description: '正在跳转到主页...',
-        });
-        router.push('/square');
-        router.refresh();
+      console.log('登录结果:', result);
+
+      if (!result) {
+        throw new Error('登录请求失败');
       }
-    } catch (error) {
-      console.error(error);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      toast({
+        title: '登录成功',
+        description: '正在跳转...',
+      });
+
+      // 使用 replace 而不是 push，这样用户不能返回到登录页面
+      router.replace(result.url || '/square');
+    } catch (error: any) {
+      console.error('登录失败:', error);
       toast({
         title: '登录失败',
-        description: '发生未知错误，请稍后重试',
+        description: error.message || '发生未知错误，请稍后重试',
         variant: 'destructive',
       });
     } finally {
