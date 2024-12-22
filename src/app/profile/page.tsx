@@ -14,6 +14,7 @@ import { userProfileSchema } from "@/lib/validations/user";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "next-auth/react";
+import { ProfileImageUpload } from "@/components/user/profile-image-upload";
 
 type FormData = z.infer<typeof userProfileSchema>;
 
@@ -133,7 +134,7 @@ export default function ProfilePage() {
                   onValueChange={(value) => form.setValue("gender", value as "male" | "female")}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="��择性别" />
+                    <SelectValue placeholder="选择性别" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">男</SelectItem>
@@ -242,62 +243,10 @@ export default function ProfilePage() {
         {/* 照片上传 */}
         <Card className="p-6 space-y-4">
           <h2 className="text-lg font-semibold">个人照片</h2>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {[0, 1, 2].map((index) => {
-              const photos = form.watch("photos") || [];
-              const photo = photos[index];
-              
-              return (
-                <div key={index} className="relative aspect-square group">
-                  {photo ? (
-                    <div className="relative w-full h-full">
-                      <img
-                        src={photo}
-                        alt={`照片 ${index + 1}`}
-                        className="object-cover w-full h-full rounded-lg"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => {
-                          const currentPhotos = form.watch("photos") || [];
-                          const newPhotos = currentPhotos.filter((_, i) => i !== index);
-                          form.setValue("photos", newPhotos);
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed rounded-lg border-muted-foreground/25 hover:border-muted-foreground/50">
-                      <Button
-                        variant="ghost"
-                        className="absolute"
-                        onClick={() => {
-                          // TODO: 实现照片上传
-                          const url = prompt("输入照片URL（临时使用）");
-                          if (url) {
-                            const currentPhotos = form.watch("photos") || [];
-                            const newPhotos = [...currentPhotos];
-                            newPhotos[index] = url;
-                            form.setValue("photos", newPhotos);
-                          }
-                        }}
-                      >
-                        上传照片
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          
-          <p className="text-sm text-muted-foreground">
-            最多上传3张照片，每张照片不超过5MB
-          </p>
+          <ProfileImageUpload
+            value={form.watch("photos")}
+            onChange={(urls) => form.setValue("photos", urls)}
+          />
         </Card>
       </div>
     </div>
