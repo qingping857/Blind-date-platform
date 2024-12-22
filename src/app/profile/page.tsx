@@ -56,7 +56,10 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/auth/login" });
+    await signOut({ 
+      callbackUrl: "/",  // 修改为根路径，这样会显示登录/注册页面
+      redirect: true     // 确保重定向生效
+    });
   };
 
   if (isLoading) {
@@ -185,6 +188,7 @@ export default function ProfilePage() {
                 <Input 
                   placeholder="输入专业" 
                   {...form.register("major")}
+                  error={form.formState.errors.major?.message}
                 />
               </div>
             </div>
@@ -229,7 +233,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label>微信号</Label>
               <Input 
-                placeholder="输入微信" 
+                placeholder="输入微信号" 
                 {...form.register("wechat")}
                 error={form.formState.errors.wechat?.message}
               />

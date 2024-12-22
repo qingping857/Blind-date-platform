@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Toaster } from "@/components/ui/toaster";
+import { SessionProvider } from "@/components/providers/session-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,8 +24,10 @@ export default function RootLayout({
         inter.className,
         "min-h-screen bg-background font-sans antialiased"
       )}>
-        <MainLayout>{children}</MainLayout>
-        <Toaster />
+        <SessionProvider>
+          <MainLayout>{children}</MainLayout>
+          <Toaster />
+        </SessionProvider>
       </body>
     </html>
   );
