@@ -15,6 +15,10 @@ export interface UserBasicInfo {
   selfIntro: string;
   expectation: string;
   wechat: string;
+  location?: {
+    province: string;
+    city: string;
+  };
 }
 
 export interface User extends UserBasicInfo {
@@ -39,6 +43,10 @@ export interface RegisterFormData extends UserBasicInfo {
   photos: File[];
   verificationAnswer: string;
   verificationCode: string;
+  location?: {
+    province: string;
+    city: string;
+  };
 }
 
 // 数据库模型接口

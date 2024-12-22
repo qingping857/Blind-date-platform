@@ -52,19 +52,22 @@ export const registerValidationSchema = baseRegisterSchema;
 
 // 用户资料schema
 export const userProfileSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
-  nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
-  gender: z.enum(['male', 'female']).optional(),
-  age: z.number().min(18, '年龄必须大于18岁').max(100, '年龄必须小于100岁').optional(),
-  city: z.string().min(2, '请输入有效的城市名').optional(),
+  nickname: z.string().min(2, "昵称至少2个字符").max(20, "昵称最多20个字符"),
+  age: z.number().min(18, "年龄必须大于等于18岁").max(100, "年龄必须小于等于100岁"),
+  gender: z.enum(["male", "female"], {
+    required_error: "请选择性别",
+  }),
+  location: z.object({
+    province: z.string().min(1, "请选择省份"),
+    city: z.string().min(1, "请选择城市"),
+  }),
   mbti: z.string().optional(),
-  university: z.string().min(2, '请输入有效的学校名称').optional(),
+  university: z.string().min(2, "学校名称至少2个字符").max(50, "学校名称最多50个字符"),
   major: z.string().optional(),
-  grade: z.string().optional(),
-  selfIntro: z.string().min(10, '自我介绍至少10个字符').max(100, '自我介绍最多100个字符').optional(),
-  expectation: z.string().min(10, '期待描述至少10个字符').max(100, '期待描述最多100个字符').optional(),
-  wechat: z.string().min(6, '请输入有效的微信号').optional(),
-  photos: z.array(z.any()).min(1, '请至少上传1张照片').max(3, '最多上传3张照片').optional(),
-  verificationAnswer: z.string().optional(),
-}).partial();  // 使所有字段都是可选的
+  grade: z.string().min(1, "请选择年级"),
+  selfIntro: z.string().min(10, "自我介绍至少10个字符").max(500, "自我介绍最多500个字符"),
+  expectation: z.string().min(10, "期待至少10个字符").max(500, "期待最多500个字符"),
+  wechat: z.string().min(1, "请输入微信号"),
+  photos: z.array(z.string()).min(1, "至少上传1张照片").max(3, "最多上传3张照片"),
+});
   

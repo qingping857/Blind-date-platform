@@ -1,50 +1,105 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { connectDB } from "@/lib/db";
+import { User } from "@/models/user";
+import { UserListItem, ApiResponse } from "@/types/shared";
 
-export async function GET(request: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get("query");
-    const minAge = Number(searchParams.get("minAge")) || 18;
-    const maxAge = Number(searchParams.get("maxAge")) || 50;
-    const gender = searchParams.get("gender");
-    const location = searchParams.get("location");
+    // 1. 获取当前会话
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "请先登录" },
+        { status: 401 }
+      );
+    }
 
-    const db = await connectToDatabase();
-    const collection = db.collection("users");
+    // 2. 获取查询参数
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get("query") || "";
+    const searchType = searchParams.get("searchType") || "selfIntro";
+    const minAge = parseInt(searchParams.get("minAge") || "18");
+    const maxAge = parseInt(searchParams.get("maxAge") || "100");
+    const gender = searchParams.get("gender") || "all";
+    const province = searchParams.get("province") || "all";
+    const city = searchParams.get("city") || "all";
+    const mbti = searchParams.get("mbti") || "all";
+    const grade = searchParams.get("grade") || "all";
 
-    // 构建查询条件
+    // 3. 构建查询条件
     const filter: any = {
+      email: { $ne: session.user.email }, // 排除当前用户
       age: { $gte: minAge, $lte: maxAge },
     };
 
-    if (query) {
-      filter.$or = [
-        { introduction: { $regex: query, $options: "i" } },
-        { expectation: { $regex: query, $options: "i" } },
-      ];
-    }
-
-    if (gender && gender !== "all") {
+    // 添加性别筛选
+    if (gender !== "all") {
       filter.gender = gender;
     }
 
-    if (location && location !== "all") {
-      filter.location = location;
+    // 添加地区筛选
+    if (province !== "all") {
+      filter["location.province"] = province;
+      if (city !== "all") {
+        filter["location.city"] = city;
+      }
     }
 
-    const users = await collection
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray();
+    // 添加MBTI筛选
+    if (mbti !== "all") {
+      filter.mbti = mbti;
+    }
 
-    return NextResponse.json(users);
-  } catch (error) {
-    console.error("Error fetching users:", error);
+    // 添加年级筛选
+    if (grade !== "all") {
+      filter.grade = grade;
+    }
+
+    // 添加搜索条件
+    if (query) {
+      filter[searchType] = { $regex: query, $options: "i" };
+    }
+
+    // 4. 连接数据库
+    await connectDB();
+
+    // 5. 查询用户列表
+    const users = await User.find(filter)
+      .select("-password -verificationAnswer")
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    // 6. 转换用户数据
+    const userList: UserListItem[] = users.map(user => ({
+      id: user._id.toString(),
+      nickname: user.nickname,
+      age: user.age,
+      gender: user.gender,
+      location: user.location || { province: "all", city: "all" },
+      mbti: user.mbti,
+      university: user.university,
+      major: user.major,
+      grade: user.grade,
+      selfIntro: user.selfIntro,
+      expectation: user.expectation,
+      wechat: user.wechat,
+      photos: user.photos,
+    }));
+
+    // 7. 返回用户列表
+    const response: ApiResponse<UserListItem[]> = {
+      success: true,
+      data: userList,
+    };
+
+    return NextResponse.json(response);
+    
+  } catch (error: any) {
+    console.error("获取用户列表失败:", error);
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { success: false, error: error.message || "获取用户列表失败" },
       { status: 500 }
     );
   }

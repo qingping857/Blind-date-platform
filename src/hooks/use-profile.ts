@@ -1,31 +1,17 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-export interface UserProfile {
-  nickname: string;
-  age: number;
-  gender: "male" | "female";
-  city: string;
-  mbti: string;
-  university: string;
-  major: string;
-  grade: string;
-  selfIntro: string;
-  expectation: string;
-  wechat: string;
-  photos: string[];
-}
+import { UserBasicInfo, ApiResponse } from "@/types/shared";
 
 export interface UseProfileReturn {
   isLoading: boolean;
-  profile: UserProfile | null;
+  profile: UserBasicInfo | null;
   fetchProfile: () => Promise<void>;
-  updateProfile: (data: UserProfile) => Promise<void>;
+  updateProfile: (data: UserBasicInfo) => Promise<void>;
 }
 
 export function useProfile(): UseProfileReturn {
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserBasicInfo | null>(null);
   const { toast } = useToast();
 
   const fetchProfile = async () => {
@@ -51,7 +37,7 @@ export function useProfile(): UseProfileReturn {
     }
   };
 
-  const updateProfile = async (data: UserProfile) => {
+  const updateProfile = async (data: UserBasicInfo) => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/user/profile", {

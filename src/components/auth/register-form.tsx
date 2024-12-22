@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import type { RegisterFormData } from '@/types/user';
 import { toast } from '@/hooks/use-toast';
+import { CitySelect } from "@/components/shared/city-select";
 
 const GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'] as const;
 const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
@@ -23,6 +24,8 @@ export function RegisterForm() {
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [province, setProvince] = useState("all");
+  const [city, setCity] = useState("all");
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -49,6 +52,12 @@ export function RegisterForm() {
     try {
       setIsLoading(true);
       console.log('开始注册流程');
+
+      // 更新地区信息
+      data.location = {
+        province,
+        city
+      };
 
       // 创建FormData对象
       const formData = new FormData();
@@ -266,7 +275,7 @@ export function RegisterForm() {
               <Label htmlFor="gender">性别</Label>
               <Select onValueChange={(value) => form.setValue('gender', value as 'male' | 'female')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="��选择性别" />
+                  <SelectValue placeholder="选择性别" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">男</SelectItem>
@@ -293,14 +302,13 @@ export function RegisterForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="city">城市</Label>
-              <Input
-                {...form.register('city')}
-                id="city"
-                placeholder="请输入城市"
+              <CitySelect
+                province={province}
+                city={city}
+                onProvinceChange={setProvince}
+                onCityChange={setCity}
+                error={form.formState.errors.city?.message}
               />
-              {form.formState.errors.city && (
-                <p className="text-sm text-red-500">{form.formState.errors.city.message}</p>
-              )}
             </div>
           </div>
 
@@ -420,7 +428,7 @@ export function RegisterForm() {
                       : '点击添加更多照片'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    支持 JPG, PNG 格式，每张不超过 5MB
+                    支持 JPG, PNG 格式，每张��超过 5MB
                   </p>
                 </div>
               </div>

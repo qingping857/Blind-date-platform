@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -9,23 +9,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useProfile, UseProfileReturn, UserProfile } from "@/hooks/use-profile";
+import { useProfile } from "@/hooks/use-profile";
 import { userProfileSchema } from "@/lib/validations/user";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "next-auth/react";
 import { ProfileImageUpload } from "@/components/user/profile-image-upload";
 import { useToast } from "@/hooks/use-toast";
+import { CitySelect } from "@/components/shared/city-select";
+import { UserBasicInfo } from "@/types/shared";
 
 type FormData = z.infer<typeof userProfileSchema>;
 
 const GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'] as const;
-const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
+const MBTI_TYPES = [
+  'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
+  'ISTP', 'ISFP', 'INFP', 'INTP',
+  'ESTP', 'ESFP', 'ENFP', 'ENTP',
+  'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'
+] as const;
 
 export default function ProfilePage() {
-  const profileData: UseProfileReturn = useProfile();
-  const { isLoading, profile, fetchProfile, updateProfile } = profileData;
+  const { isLoading, profile, updateProfile } = useProfile();
   const { toast } = useToast();
+  
+  const [province, setProvince] = useState("all");
+  const [city, setCity] = useState("all");
   
   const form = useForm<FormData>({
     resolver: zodResolver(userProfileSchema),
@@ -33,7 +42,10 @@ export default function ProfilePage() {
       nickname: "",
       age: 18,
       gender: "male",
-      city: "",
+      location: {
+        province: "all",
+        city: "all"
+      },
       mbti: "",
       university: "",
       major: "",
@@ -47,36 +59,40 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
-      form.reset(profile);
+      form.reset({
+        ...profile,
+        location: {
+          province: profile.location?.province || "all",
+          city: profile.location?.city || "all"
+        }
+      });
+      setProvince(profile.location?.province || "all");
+      setCity(profile.location?.city || "all");
     }
   }, [profile, form]);
 
   const onSubmit = async (data: FormData) => {
     try {
-      // 确保所有必填字段都有值
-      const profileData: UserProfile = {
-        nickname: data.nickname || "",
-        age: data.age || 18,
-        gender: data.gender || "male",
-        city: data.city || "",
-        mbti: data.mbti || "",
-        university: data.university || "",
-        major: data.major || "",
-        grade: data.grade || "",
-        selfIntro: data.selfIntro || "",
-        expectation: data.expectation || "",
-        wechat: data.wechat || "",
-        photos: data.photos || [],
+      const profileData: UserBasicInfo = {
+        ...data,
+        location: {
+          province: province || "all",
+          city: city || "all"
+        }
       };
-
+      
       await updateProfile(profileData);
+      
       toast({
-        title: "保存成功",
+        title: "更新成功",
         description: "个人资料已更新",
       });
-    } catch (error) {
-      // 错误已经在 updateProfile 中处理
-      console.error("保存失败:", error);
+    } catch (error: any) {
+      toast({
+        title: "更新失败",
+        description: error.message || "发生未知错误",
+        variant: "destructive",
+      });
     }
   };
 
@@ -171,11 +187,13 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>城市</Label>
-              <Input 
-                placeholder="输入城市" 
-                {...form.register("city")}
-                error={form.formState.errors.city?.message}
+              <Label>地区</Label>
+              <CitySelect
+                province={province}
+                city={city}
+                onProvinceChange={setProvince}
+                onCityChange={setCity}
+                error={form.formState.errors.location?.city?.message}
               />
             </div>
 
@@ -268,11 +286,15 @@ export default function ProfilePage() {
 
         {/* 照片上传 */}
         <Card className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold">个人照片</h2>
+          <h2 className="text-lg font-semibold">照片</h2>
           <ProfileImageUpload
             value={form.watch("photos")}
             onChange={(urls) => form.setValue("photos", urls)}
+            maxFiles={3}
           />
+          {form.formState.errors.photos && (
+            <p className="text-sm text-destructive">{form.formState.errors.photos.message}</p>
+          )}
         </Card>
       </div>
     </div>

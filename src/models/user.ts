@@ -1,13 +1,11 @@
 import mongoose from 'mongoose';
-import { type } from 'os';
+import { Location } from '@/types/shared';
 
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
     unique: true,
-    lowercase: true,
-    trim: true,
   },
   password: {
     type: String,
@@ -16,14 +14,6 @@ const userSchema = new mongoose.Schema({
   nickname: {
     type: String,
     required: true,
-    trim: true,
-    minlength: 2,
-    maxlength: 20,
-  },
-  gender: {
-    type: String,
-    enum: ['male', 'female'],
-    required: true,
   },
   age: {
     type: Number,
@@ -31,79 +21,77 @@ const userSchema = new mongoose.Schema({
     min: 18,
     max: 100,
   },
-  city: {
+  gender: {
     type: String,
+    enum: ['male', 'female'],
     required: true,
-    trim: true,
+  },
+  location: {
+    province: {
+      type: String,
+      required: true,
+    },
+    city: {
+      type: String,
+      required: true,
+    },
   },
   mbti: {
     type: String,
-    trim: true,
   },
   university: {
     type: String,
     required: true,
-    trim: true,
   },
   major: {
     type: String,
-    trim: true,
   },
   grade: {
     type: String,
     required: true,
-    trim: true,
   },
   selfIntro: {
     type: String,
     required: true,
-    trim: true,
-    minlength: 10,
-    maxlength: 100,
   },
   expectation: {
     type: String,
     required: true,
-    trim: true,
-    minlength: 10,
-    maxlength: 100,
   },
   wechat: {
     type: String,
     required: true,
-    trim: true,
   },
-  photos: [{
-    type: String,
+  photos: {
+    type: [String],
     required: true,
-  }],
+    validate: {
+      validator: function(v: string[]) {
+        return v.length >= 1 && v.length <= 3;
+      },
+      message: '照片数量必须在1-3张之间',
+    },
+  },
   verificationAnswer: {
     type: String,
     required: true,
   },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending',
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
-  isEmailVerified: {
-    type: Boolean,
-    default: false,
-  }
-}, {
-  timestamps: true,
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// 添加索引
-userSchema.index({ status: 1 });
-userSchema.index({ createdAt: -1 });
-
-// 在返回用户数据时去除密码
-userSchema.set('toJSON', {
-  transform: function(doc, ret, options) {
-    delete ret.password;
-    return ret;
-  }
+// 更新时自动更新updatedAt字段
+userSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
 });
 
 export const User = mongoose.models.User || mongoose.model('User', userSchema); 
