@@ -15,6 +15,7 @@ export interface User {
 // 筛选器状态类型
 export interface FilterState {
   query: string;
+  searchType: "intro" | "expectation";
   ageRange: [number, number];
   gender: string;
   location: string;
