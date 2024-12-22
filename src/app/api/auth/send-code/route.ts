@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateVerificationCode, sendVerificationCode } from '@/lib/mail';
-import connectDB from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import { User } from '@/models/user';
 import { VerificationCode } from '@/models/verification-code';
 
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 连接数据库
     await connectDB();
 
     // 检查邮箱是否已被注册
@@ -44,11 +45,17 @@ export async function POST(req: Request) {
     // 发送验证码邮件
     await sendVerificationCode(email, code);
 
-    return NextResponse.json({ message: '验证码已发送' });
+    return NextResponse.json({ 
+      success: true,
+      message: '验证码已发送' 
+    });
   } catch (error: any) {
     console.error('发送验证码失败:', error);
     return NextResponse.json(
-      { error: error.message || '发送验证码失败' },
+      { 
+        success: false, 
+        error: error.message || '发送验证码失败' 
+      },
       { status: 500 }
     );
   }
