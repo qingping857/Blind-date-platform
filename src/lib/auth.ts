@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
             console.log('用户不存在');
             throw new Error('邮箱或密码错误');
           }
-          console.log('找到用户:', user.email, '状态:', user.status, '邮箱验证:', user.isEmailVerified);
+          console.log('找到用户:', user.email);
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
           if (!isPasswordValid) {
@@ -35,23 +35,11 @@ export const authOptions: NextAuthOptions = {
           }
           console.log('密码验证通过');
 
-          if (!user.isEmailVerified) {
-            console.log('邮箱未验证');
-            throw new Error('请先验证您的邮箱后再登录');
-          }
-
-          if (user.status !== 'approved') {
-            console.log('账号未审核通过');
-            throw new Error('您的账号正在审核中，请等待审核通过后再登录');
-          }
-
           console.log('登录成功');
           return {
             id: user._id.toString(),
             email: user.email,
             name: user.nickname,
-            status: user.status,
-            isEmailVerified: user.isEmailVerified,
           };
         } catch (error: any) {
           console.error('认证过程中发生错误:', error);
@@ -75,8 +63,6 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.status = user.status;
-        token.isEmailVerified = user.isEmailVerified;
       }
       return token;
     },
@@ -85,8 +71,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
-        (session.user as any).status = token.status;
-        (session.user as any).isEmailVerified = token.isEmailVerified;
       }
       return session;
     }

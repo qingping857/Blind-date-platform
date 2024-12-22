@@ -96,9 +96,7 @@ export async function POST(req: Request) {
     console.log('创建用户...');
     const user = await User.create({
       ...validatedData,
-      password: hashedPassword,
-      status: 'approved',
-      isEmailVerified: true // 验证码验证通过，直接设置为已验证
+      password: hashedPassword
     });
     console.log('用户创建成功, ID:', user._id);
     
@@ -108,7 +106,7 @@ export async function POST(req: Request) {
     console.log('注册流程完成');
     return NextResponse.json({
       ...userWithoutPassword,
-      message: '��册成功！'
+      message: '注册成功！'
     }, { status: 201 });
   } catch (error: any) {
     console.error('注册失败:', error);

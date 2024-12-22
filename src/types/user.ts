@@ -2,7 +2,6 @@ import { Types } from 'mongoose';
 import { UserBasicInfo } from "./shared";
 
 export type Gender = 'male' | 'female';
-export type UserStatus = 'pending' | 'approved' | 'rejected';
 
 // 数据库模型接口
 export interface IUser extends UserBasicInfo {
