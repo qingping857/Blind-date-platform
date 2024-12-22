@@ -1,40 +1,24 @@
 import mongoose from 'mongoose';
-import 'dotenv/config';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  throw new Error('请在环境变量中设置 MONGODB_URI');
 }
 
-// 使用我们定义的全局类型
-if (!global.mongoose) {
-  global.mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (global.mongoose.conn) {
-    return global.mongoose.conn;
-  }
-
-  if (!global.mongoose.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    global.mongoose.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
-  }
-
+export async function connectDB() {
   try {
-    global.mongoose.conn = await global.mongoose.promise;
-  } catch (e) {
-    global.mongoose.promise = null;
-    throw e;
+    const { connection } = await mongoose.connect(MONGODB_URI);
+    
+    if (connection.readyState === 1) {
+      console.log('数据库连接成功');
+      return connection;
+    }
+  } catch (error) {
+    console.error('数据库连接失败:', error);
+    throw error;
   }
-
-  return global.mongoose.conn;
 }
 
-export default connectDB; 
+// 导出 mongoose 实例
+export default mongoose; 
