@@ -16,10 +16,13 @@
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API 路由
+│   │   ├── auth/         # 认证相关API
+│   │   ├── user/         # 用户相关API
+│   │   └── upload/       # 文件上传API
 │   ├── auth/              # 认证相关页面
 │   ├── contact/           # 联系页面
 │   ├── profile/           # 个人资料页面
-│   ├── square/            # 广场页面
+│   ├── square/            # 广场页面（新增）
 │   ├── favicon.ico        # 网站图标
 │   ├── globals.css        # 全局样式
 │   └── layout.tsx         # 根布局组件
@@ -44,7 +47,7 @@ src/
 │   │   ├── user-card.tsx     # 用户卡片组件
 │   │   └── user-filter.tsx   # 用户筛选组件
 │   │
-│   └── ui/              # UI基础组件
+│   └── ui/              # UI基础组件（shadcn/ui）
 │       ├── avatar.tsx       # 头像组件
 │       ├── badge.tsx        # 徽章组件
 │       ├── button.tsx       # 按钮组件
@@ -54,7 +57,7 @@ src/
 │       ├── input.tsx        # 输入框组件
 │       ├── label.tsx        # 标签组件
 │       ├── select.tsx       # 选择框组件
-│       ├── skeleton.tsx     # 骨架屏组件
+│       ���── skeleton.tsx     # 骨架屏组件
 │       ├── tabs.tsx         # 标签页组件
 │       ├── textarea.tsx     # 文本域组件
 │       ├── toast.tsx        # 提示消息组件
@@ -93,7 +96,7 @@ src/
 其他配置文件：
 ├── .env                # 环境变量
 ├── .gitignore         # Git忽略配置
-├── components.json    # 组件配置
+├── components.json    # shadcn/ui组件配置
 ├── next.config.js    # Next.js配置
 ├── package.json      # 项目依赖配置
 ├── postcss.config.js # PostCSS配置
@@ -128,20 +131,44 @@ src/
 
 ## 开发进度
 
+### 已完成
 - [x] 项目基础架构搭建
-- [x] UI组件库集成
+- [x] UI组件库集成（shadcn/ui）
 - [x] 用户认证系统
+  - [x] 登录功能
+  - [x] 注册功能
+  - [x] 邮箱验证
 - [x] 数据库集成
+  - [x] 用户模型
+  - [x] 验证码模型
 - [x] 邮件系统集成
-- [x] 表单验证
-- [x] 错误处理
+  - [x] 验证码发送
+  - [x] 邮件模板
+- [x] 表单验证（使用Zod）
+- [x] 错误处理系统
 - [x] 全局状态管理
 - [x] 布局系统
+
+### 进行中
 - [ ] 文件上传功能
+  - [x] 上传接口
+  - [ ] 前端集成
 - [ ] 个人资料管理
+  - [x] 基础信息表单
+  - [ ] 照片管理
+
+### 待开发
 - [ ] 广场页面
+  - [ ] 用户列表API
+  - [ ] 用户详情API
+  - [ ] 筛选功能
+  - [ ] 搜索功能
 - [ ] 联系功能
-- [ ] 搜索和筛选
+  - [ ] 申请系统
+  - [ ] 消息通知
+- [ ] 搜索系统
+  - [ ] 高级筛选
+  - [ ] 智能推荐
 
 ## 开发指南
 
