@@ -14,9 +14,17 @@ export const VERIFICATION_ANSWERS = [
   "越参与，越收获"
 ] as const;
 
-// 验证城市是否有效
-const isValidCity = (province: string, city: string) => {
-  if (!province || province === 'all' || !city || city === 'all') return false;
+// 验证城市选择是否有效
+const validateCity = (province: string, city: string) => {
+  // 如果省份或城市为空，返回 false
+  if (!province || !city) {
+    return false;
+  }
+
+  // 如果是初始值，返回 false
+  if (province === "all" || city === "all") {
+    return false;
+  }
 
   // 检查直辖市
   if (locationData.municipalities.some(m => m.value === province)) {
@@ -35,73 +43,103 @@ const isValidCity = (province: string, city: string) => {
   return provinceData.cities.some(c => c.value === city);
 };
 
-// 基础注册schema（不包含密码确认）
-export const baseRegisterSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
-  verificationCode: z.string().length(6, '验证码必须是6位数字'),
-  password: z.string().min(6, '密码至少6个字符'),
-  nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
-  gender: z.enum(['male', 'female'], { required_error: '请选择性别' }),
-  age: z.number().min(18, '年龄必须大于18岁').max(100, '年龄必须小于100岁'),
-  province: z.string().min(1, '请选择省份'),
-  city: z.string().min(1, '请选择城市'),
-  mbti: z.string().optional(),
-  university: z.string().min(2, '请输入有效的学校名称'),
-  major: z.string().optional(),
-  grade: z.string().min(1, '请选择年级'),
-  selfIntro: z.string().min(10, '自我介绍至少10个字符').max(100, '自我介绍最多100个字符'),
-  expectation: z.string().min(10, '期待描述至少10个字符').max(100, '期待描述最多100个字符'),
-  wechat: z.string().min(6, '请输入有效的微信号'),
-  photos: z.array(z.any()).min(1, '请至少上���1张照片').max(3, '最多上传3张照片'),
+// 基础注册表单验证
+export const registerSchema = z.object({
+  email: z.string()
+    .min(1, "请输入邮箱")
+    .email("邮箱格式不正确"),
+  password: z.string()
+    .min(6, "密码至少6位")
+    .max(20, "密码最多20位"),
+  confirmPassword: z.string()
+    .min(1, "请确认密码"),
+  verificationCode: z.string()
+    .min(1, "请输入验证码")
+    .length(6, "验证码为6位数字"),
   verificationAnswer: z.string()
+    .min(1, "请输入验证答案")
     .refine(
       (value) => VERIFICATION_ANSWERS.includes(value as typeof VERIFICATION_ANSWERS[number]),
       {
-        message: '请输入开营仪式上的十句话中的任意一句，需要完全匹配'
+        message: "请输入开营仪式上的十句话中的任意一句，需要完全匹配"
       }
     ),
-}).refine(
-  (data) => isValidCity(data.province, data.city),
-  {
-    message: '请选择有效的城市',
-    path: ['city']
-  }
-);
-
-// 前端使用的完整注册schema（包含密码确认）
-export const registerSchema = z.object({
-  ...baseRegisterSchema.shape,
-  confirmPassword: z.string()
+  nickname: z.string()
+    .min(2, "昵称至少2个字符")
+    .max(20, "昵称最多20个字符"),
+  gender: z.enum(["male", "female"]),
+  age: z.number()
+    .min(18, "年龄必须大于等于18岁")
+    .max(100, "年龄必须小于等于100岁"),
+  province: z.string(),
+  city: z.string(),
+  mbti: z.string().optional(),
+  university: z.string()
+    .min(1, "请输入学校"),
+  major: z.string().optional(),
+  grade: z.string()
+    .min(1, "请选择年级"),
+  selfIntro: z.string()
+    .min(1, "请输入自我介绍")
+    .max(100, "自我介绍最多100字"),
+  expectation: z.string()
+    .min(1, "请输入期待")
+    .max(100, "期待最多100字"),
+  wechat: z.string()
+    .min(1, "请输入微信号"),
+  photos: z.array(z.any())
+    .min(1, "请上传至少1张照片")
+    .max(3, "最多上传3张照片"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "两次输入的密码不一致",
   path: ["confirmPassword"],
+}).refine((data) => data.province !== "all", {
+  message: "请选择省份",
+  path: ["province"],
+}).refine((data) => data.city !== "all", {
+  message: "请选择城市",
+  path: ["city"],
+}).refine((data) => validateCity(data.province, data.city), {
+  message: "请选择有效的城市",
+  path: ["city"],
 });
 
-// 后端使用的注册验证schema（使用基础schema）
-export const registerValidationSchema = baseRegisterSchema;
-
-// 用户资料schema
+// 用户资料验证（不包含密码和验证相关字段）
 export const userProfileSchema = z.object({
-  nickname: z.string().min(2, "昵称至少2个字符").max(20, "昵称最多20个字符"),
-  age: z.number().min(18, "年龄必须大于等于18岁").max(100, "年龄必须小于等于100岁"),
-  gender: z.enum(["male", "female"], {
-    required_error: "请选择性别",
-  }),
-  province: z.string().min(1, "请选择省份"),
-  city: z.string().min(1, "请选择城市"),
+  nickname: z.string()
+    .min(2, "昵称至少2个字符")
+    .max(20, "昵称最多20个字符"),
+  gender: z.enum(["male", "female"]),
+  age: z.number()
+    .min(18, "年龄必须大于等于18岁")
+    .max(100, "年龄必须小于等于100岁"),
+  province: z.string(),
+  city: z.string(),
   mbti: z.string().optional(),
-  university: z.string().min(2, "学校名称至少2个字符").max(50, "学校名称最多50个字符"),
+  university: z.string()
+    .min(1, "请输入学校"),
   major: z.string().optional(),
-  grade: z.string().min(1, "请选择年级"),
-  selfIntro: z.string().min(10, "自我介绍至少10个字符").max(500, "自我介绍最多500个字符"),
-  expectation: z.string().min(10, "期待至少10个字符").max(500, "期待最多500个字符"),
-  wechat: z.string().min(1, "请输入微信号"),
-  photos: z.array(z.string()).min(1, "至少上传1张照片").max(3, "最多上传3张照片"),
-}).refine(
-  (data) => isValidCity(data.province, data.city),
-  {
-    message: '请选择有效的城市',
-    path: ['city']
-  }
-);
+  grade: z.string()
+    .min(1, "请选择年级"),
+  selfIntro: z.string()
+    .min(1, "请输入自我介绍")
+    .max(100, "自我介绍最多100字"),
+  expectation: z.string()
+    .min(1, "请输入期待")
+    .max(100, "期待最多100字"),
+  wechat: z.string()
+    .min(1, "请输入微信号"),
+  photos: z.array(z.any())
+    .min(1, "请上传至少1张照片")
+    .max(3, "最多上传3张照片"),
+}).refine((data) => data.province !== "all", {
+  message: "请选择省份",
+  path: ["province"],
+}).refine((data) => data.city !== "all", {
+  message: "请选择城市",
+  path: ["city"],
+}).refine((data) => validateCity(data.province, data.city), {
+  message: "请选择有效的城市",
+  path: ["city"],
+});
   
