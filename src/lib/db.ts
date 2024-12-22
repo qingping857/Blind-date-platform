@@ -6,6 +6,10 @@ if (!MONGODB_URI) {
   throw new Error('请在环境变量中设置 MONGODB_URI');
 }
 
+/**
+ * 连接数据库
+ * @returns mongoose connection
+ */
 export async function connectDB() {
   try {
     const { connection } = await mongoose.connect(MONGODB_URI);
@@ -20,5 +24,5 @@ export async function connectDB() {
   }
 }
 
-// 导出 mongoose 实例
-export default mongoose; 
+// 导出 mongoose 实例以供其他模块使用
+export { mongoose }; 

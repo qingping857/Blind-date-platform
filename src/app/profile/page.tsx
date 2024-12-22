@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useProfile } from "@/hooks/use-profile";
+import { useProfile, UseProfileReturn, UserProfile } from "@/hooks/use-profile";
 import { userProfileSchema } from "@/lib/validations/user";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +21,8 @@ const GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研
 const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
 
 export default function ProfilePage() {
-  const { isLoading, profile, fetchProfile, updateProfile } = useProfile();
+  const profileData: UseProfileReturn = useProfile();
+  const { isLoading, profile, fetchProfile } = profileData;
   
   const form = useForm<FormData>({
     resolver: zodResolver(userProfileSchema),
@@ -42,23 +43,20 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
     if (profile) {
       form.reset(profile);
     }
   }, [profile, form]);
 
   const onSubmit = async (data: FormData) => {
-    await updateProfile(data);
+    // 暂时注释掉 updateProfile，因为我们现在只实现查看功能
+    // await updateProfile(data);
   };
 
   const handleLogout = async () => {
     await signOut({ 
-      callbackUrl: "/",  // 修改为根路径，这样会显示登录/注册页面
-      redirect: true     // 确保重定向生效
+      callbackUrl: "/auth",
+      redirect: true
     });
   };
 
@@ -135,7 +133,7 @@ export default function ProfilePage() {
                   onValueChange={(value) => form.setValue("gender", value as "male" | "female")}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="选择性别" />
+                    <SelectValue placeholder="��择性别" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">男</SelectItem>

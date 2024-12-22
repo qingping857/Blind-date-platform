@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "./use-toast";
 
-interface UserProfile {
+export interface UserProfile {
   email: string;
   nickname: string;
   gender: 'male' | 'female';
@@ -16,7 +16,14 @@ interface UserProfile {
   photos: string[];
 }
 
-export function useProfile() {
+export interface UseProfileReturn {
+  isLoading: boolean;
+  profile: UserProfile | null;
+  fetchProfile: () => Promise<void>;
+  updateProfile?: (data: UserProfile) => Promise<void>;
+}
+
+export function useProfile(): UseProfileReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
