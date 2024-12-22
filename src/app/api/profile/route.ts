@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         nickname: user.nickname,
         gender: user.gender,
         age: user.age,
-        province: user.province || "all",
-        city: user.city || "all",
+        province: user.province,
+        city: user.city,
         mbti: user.mbti,
         university: user.university,
         major: user.major,
@@ -79,11 +79,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 更新用户资料
-    Object.assign(user, {
-      ...validatedData,
-      province: validatedData.province || "all",
-      city: validatedData.city || "all"
-    });
+    Object.assign(user, validatedData);
     await user.save();
 
     const response: ApiResponse<UserBasicInfo> = {

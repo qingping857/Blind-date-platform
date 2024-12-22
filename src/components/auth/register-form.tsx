@@ -14,6 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import type { RegisterFormData } from '@/types/user';
 import { toast } from '@/hooks/use-toast';
 import { CitySelect } from "@/components/shared/city-select";
+import { signIn } from 'next-auth/react';
+import { z } from "zod";
 
 const GRADES = ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'] as const;
 const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as const;
@@ -48,80 +50,51 @@ export function RegisterForm() {
     },
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: z.infer<typeof registerSchema>) => {
     try {
       setIsLoading(true);
-      console.log('开始注册流程');
-
-      // 更新地区信息
-      data.location = {
-        province,
-        city
+      
+      // 构建注册数据
+      const registerData = {
+        ...data,
+        province: province,
+        city: city
       };
 
-      // 创建FormData对象
-      const formData = new FormData();
-      console.log('表单数据:', Object.entries(data).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: key === 'password' || key === 'confirmPassword' ? '***' : value
-      }), {}));
-      
-      // 添加照片
-      selectedPhotos.forEach(photo => {
-        formData.append('photos', photo);
-      });
-      console.log('已添加照片数量:', selectedPhotos.length);
-      
-      // 添加其他字段
-      Object.entries(data).forEach(([key, value]) => {
-        if (key !== 'photos' && key !== 'confirmPassword') {
-          formData.append(key, value.toString());
-        }
-      });
-
-      console.log('发送注册请求...');
       // 发送注册请求
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        body: formData,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(registerData),
       });
 
-      console.log('收到响应:', response.status, response.statusText);
-      const responseText = await response.text();
-      console.log('响应内容:', responseText);
+      const result = await response.json();
 
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        console.error('JSON解析失败:', e);
-        throw new Error('服务器响应格式错误');
+      if (!result.success) {
+        throw new Error(result.error || "注册失败");
       }
 
-      if (!response.ok) {
-        throw new Error(result.error || '注册失败');
-      }
-
-      toast({
-        title: '注册成功',
-        description: '请前往登录页面进行登录',
-        duration: 5000,
+      // 注册成功后自动登录
+      const signInResult = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
       });
 
-      // 清空表单
-      form.reset();
-      setSelectedPhotos([]);
+      if (signInResult?.error) {
+        throw new Error(signInResult.error);
+      }
+
+      // 登录成功后跳转
+      router.push("/square");
       
-      // 5秒后跳转到登录页面
-      setTimeout(() => {
-        router.push('/auth?tab=login');
-      }, 5000);
     } catch (error: any) {
-      console.error('注册失败:', error);
       toast({
-        title: '注册失败',
-        description: error.message || '发生未知错误，请稍后重试',
-        variant: 'destructive',
+        title: "注册失败",
+        description: error.message,
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -428,7 +401,7 @@ export function RegisterForm() {
                       : '点击添加更多照片'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    支持 JPG, PNG 格式，每张��超过 5MB
+                    支持 JPG, PNG 格式，每张图片超过 5MB
                   </p>
                 </div>
               </div>

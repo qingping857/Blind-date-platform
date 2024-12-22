@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoginForm } from "@/components/auth/login-form";
 import { RegisterForm } from "@/components/auth/register-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReactNode, useState } from "react";
 
 const menuItems = [
   {
@@ -30,10 +31,17 @@ const menuItems = [
   }
 ];
 
-export function MainLayout({ children }: { children: React.ReactNode }) {
+interface MainLayoutProps {
+  children: ReactNode;
+  defaultValue?: string;
+  className?: string;
+}
+
+export function MainLayout({ children, defaultValue = "home", className = "" }: MainLayoutProps) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const { toast } = useToast();
+  const [value, setValue] = useState(defaultValue);
 
   const handleNavigation = (requireAuth: boolean, href: string) => {
     if (requireAuth && !session) {
@@ -58,7 +66,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       {/* 固定的侧边栏 */}
       <div className="w-64 bg-card border-r fixed h-full">
         <div className="p-6">
-          <h1 className="text-xl font-bold">信息匹配平台</h1>
+          <h1 className="text-xl font-bold">LOVE 直聘</h1>
         </div>
         
         <nav className="space-y-2 px-4">
@@ -102,7 +110,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="bg-card border rounded-lg p-6">
-                  <Tabs defaultValue="login" className="w-full">
+                  <Tabs 
+                    value={value} 
+                    onValueChange={setValue} 
+                    defaultValue={defaultValue} 
+                    className="space-y-6"
+                  >
                     <TabsList className="grid w-full grid-cols-2 mb-6">
                       <TabsTrigger value="login">登录</TabsTrigger>
                       <TabsTrigger value="register">注册</TabsTrigger>

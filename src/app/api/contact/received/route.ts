@@ -1,70 +1,61 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
+import { User } from "@/models/user";
+import { ContactRequest } from "@/models/contact-request";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { connectDB } from "@/lib/db";
-import { ContactRequest } from "@/models/contact-request";
-import { User } from "@/models/user";
-import { ApiResponse } from "@/types/shared";
+import { ApiResponse, ContactRequestListItem } from "@/types/shared";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "请先登录" },
+        { success: false, error: "未登录" },
         { status: 401 }
       );
     }
 
     await connectDB();
 
-    // 获取当前用户
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "用户不存在" },
-        { status: 404 }
-      );
-    }
-
-    // 获取收到的申请列表
-    const requests = await ContactRequest.find({ targetId: user._id })
-      .populate("requesterId", "-password -verificationAnswer")
+    // 获取当前用户收到的联系请求
+    const requests = await ContactRequest.find({ targetId: session.user.id })
+      .populate("requesterId", "nickname photos province city wechat")
       .sort({ createdAt: -1 });
 
-    // 转换数据格式
-    const formattedRequests = requests.map(request => ({
+    // 转换为前端需要的格式
+    const requestList: ContactRequestListItem[] = requests.map(request => ({
       id: request._id.toString(),
-      requesterId: {
+      requester: {
         id: request.requesterId._id.toString(),
         nickname: request.requesterId.nickname,
-        age: request.requesterId.age,
-        gender: request.requesterId.gender,
-        university: request.requesterId.university,
-        location: request.requesterId.location,
-        wechat: request.requesterId.wechat,
+        avatar: request.requesterId.photos[0] || "",
+        province: request.requesterId.province,
+        city: request.requesterId.city,
+        wechat: request.requesterId.wechat
       },
-      targetId: request.targetId.toString(),
+      target: {
+        id: session.user.id,
+        nickname: session.user.name || "",
+        avatar: session.user.image || ""
+      },
       message: request.message,
-      response: request.response,
       status: request.status,
-      createdAt: request.createdAt,
+      response: request.response,
+      respondedAt: request.respondedAt?.toISOString(),
+      createdAt: request.createdAt.toISOString()
     }));
 
-    const response: ApiResponse<typeof formattedRequests> = {
+    const response: ApiResponse<ContactRequestListItem[]> = {
       success: true,
-      data: formattedRequests,
+      data: requestList
     };
 
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error("获取申请列表失败:", error);
+    console.error("获取收到的联系请求失败:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || "获取申请列表失败",
-        details: process.env.NODE_ENV === "development" ? error.stack : undefined
-      },
+      { success: false, error: "获取收到的联系请求失败" },
       { status: 500 }
     );
   }

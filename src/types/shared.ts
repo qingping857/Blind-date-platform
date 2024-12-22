@@ -9,7 +9,8 @@ export interface UserBasicInfo {
   nickname: string;
   gender: "male" | "female";
   age: number;
-  location: Location;
+  province: string;
+  city: string;
   mbti?: string;
   university: string;
   major?: string;
@@ -55,19 +56,6 @@ export interface UserDetail extends UserBasicInfo {
 // 联系方式申请状态
 export type ContactRequestStatus = "pending" | "approved" | "rejected";
 
-// 联系方式申请
-export interface ContactRequest {
-  id: string;
-  requesterId: string;
-  targetId: string;
-  message: string;
-  status: ContactRequestStatus;
-  response?: string;
-  respondedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // 联系方式申请列表项
 export interface ContactRequestListItem {
   id: string;
@@ -75,11 +63,17 @@ export interface ContactRequestListItem {
     id: string;
     nickname: string;
     avatar: string;
+    province?: string;
+    city?: string;
+    wechat?: string;
   };
   target: {
     id: string;
     nickname: string;
     avatar: string;
+    province?: string;
+    city?: string;
+    wechat?: string;
   };
   message: string;
   status: ContactRequestStatus;

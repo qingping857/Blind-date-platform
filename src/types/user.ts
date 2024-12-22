@@ -1,41 +1,34 @@
 import { Types } from 'mongoose';
+import { UserBasicInfo } from "./shared";
 
 export type Gender = 'male' | 'female';
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 
-export interface UserBasicInfo {
-  nickname: string;
-  gender: Gender;
-  age: number;
-  city: string;
-  mbti?: string;
-  university: string;
-  major?: string;
-  grade: string;
-  selfIntro: string;
-  expectation: string;
-  wechat: string;
-  location?: {
-    province: string;
-    city: string;
-  };
-}
-
-export interface User extends UserBasicInfo {
-  id: string;
+// 数据库模型接口
+export interface IUser extends UserBasicInfo {
   email: string;
-  photos: string[];
+  password: string;
   verificationAnswer: string;
-  status: UserStatus;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface PublicUserInfo extends UserBasicInfo {
-  id: string;
-  photos: string[];
+// 注册请求体
+export interface RegisterBody extends UserBasicInfo {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  verificationCode: string;
+  verificationAnswer: string;
 }
 
+// 登录请求体
+export interface LoginBody {
+  email: string;
+  password: string;
+}
+
+// 注册表单数据
 export interface RegisterFormData extends UserBasicInfo {
   email: string;
   password: string;
@@ -43,61 +36,5 @@ export interface RegisterFormData extends UserBasicInfo {
   photos: File[];
   verificationAnswer: string;
   verificationCode: string;
-  location?: {
-    province: string;
-    city: string;
-  };
 }
-
-// 数据库模型接口
-export interface DbUser {
-  _id: Types.ObjectId;
-  nickname: string;
-  gender: "male" | "female";
-  age: number;
-  city: string;
-  mbti: string;
-  university: string;
-  major: string;
-  grade: string;
-  selfIntro: string;
-  expectation: string;
-  photos: string[];
-  password?: string;
-  verificationAnswer?: string;
-  verificationCode?: string;
-  verificationCodeExpires?: Date;
-  __v?: number; // Mongoose version key
-}
-
-// 前端使用的接口
-export interface UserProfile {
-  id: string;
-  nickname: string;
-  gender: "male" | "female";
-  age: number;
-  city: string;
-  mbti: string;
-  university: string;
-  major: string;
-  grade: string;
-  selfIntro: string;
-  expectation: string;
-  photos: string[];
-}
-
-// 转换函数
-export const transformDbUser = (dbUser: DbUser): UserProfile => ({
-  id: dbUser._id.toString(),
-  nickname: dbUser.nickname,
-  gender: dbUser.gender,
-  age: dbUser.age,
-  city: dbUser.city,
-  mbti: dbUser.mbti,
-  university: dbUser.university,
-  major: dbUser.major,
-  grade: dbUser.grade,
-  selfIntro: dbUser.selfIntro,
-  expectation: dbUser.expectation,
-  photos: dbUser.photos,
-}); 
+  

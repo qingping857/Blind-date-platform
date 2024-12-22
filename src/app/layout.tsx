@@ -9,7 +9,7 @@ import { SessionProvider } from "@/components/providers/session-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "信息匹配平台",
+  title: "LOVE 直聘",
   description: "一个私域信息匹配平台",
 };
 

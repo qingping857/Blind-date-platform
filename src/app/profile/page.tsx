@@ -42,10 +42,8 @@ export default function ProfilePage() {
       nickname: "",
       age: 18,
       gender: "male",
-      location: {
-        province: "all",
-        city: "all"
-      },
+      province: "all",
+      city: "all",
       mbti: "",
       university: "",
       major: "",
@@ -61,13 +59,11 @@ export default function ProfilePage() {
     if (profile) {
       form.reset({
         ...profile,
-        location: {
-          province: profile.location?.province || "all",
-          city: profile.location?.city || "all"
-        }
+        province: profile.province || "all",
+        city: profile.city || "all"
       });
-      setProvince(profile.location?.province || "all");
-      setCity(profile.location?.city || "all");
+      setProvince(profile.province || "all");
+      setCity(profile.city || "all");
     }
   }, [profile, form]);
 
@@ -75,10 +71,8 @@ export default function ProfilePage() {
     try {
       const profileData: UserBasicInfo = {
         ...data,
-        location: {
-          province: province || "all",
-          city: city || "all"
-        }
+        province,
+        city
       };
       
       await updateProfile(profileData);
@@ -154,8 +148,10 @@ export default function ProfilePage() {
               <Input 
                 placeholder="输入昵称" 
                 {...form.register("nickname")}
-                error={form.formState.errors.nickname?.message}
               />
+              {form.formState.errors.nickname && (
+                <p className="text-sm text-red-500">{form.formState.errors.nickname.message}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -165,8 +161,10 @@ export default function ProfilePage() {
                   type="number" 
                   placeholder="输入年龄" 
                   {...form.register("age", { valueAsNumber: true })}
-                  error={form.formState.errors.age?.message}
                 />
+                {form.formState.errors.age && (
+                  <p className="text-sm text-red-500">{form.formState.errors.age.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -187,13 +185,13 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>地区</Label>
+              <Label>城市</Label>
               <CitySelect
                 province={province}
                 city={city}
                 onProvinceChange={setProvince}
                 onCityChange={setCity}
-                error={form.formState.errors.location?.city?.message}
+                error={form.formState.errors.city?.message}
               />
             </div>
 
@@ -222,8 +220,10 @@ export default function ProfilePage() {
                 <Input 
                   placeholder="输入学校名称" 
                   {...form.register("university")}
-                  error={form.formState.errors.university?.message}
                 />
+                {form.formState.errors.university && (
+                  <p className="text-sm text-red-500">{form.formState.errors.university.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -231,8 +231,10 @@ export default function ProfilePage() {
                 <Input 
                   placeholder="输入专业" 
                   {...form.register("major")}
-                  error={form.formState.errors.major?.message}
                 />
+                {form.formState.errors.major && (
+                  <p className="text-sm text-red-500">{form.formState.errors.major.message}</p>
+                )}
               </div>
             </div>
 

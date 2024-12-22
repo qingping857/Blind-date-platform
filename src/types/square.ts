@@ -1,45 +1,40 @@
-// 数据模型类型
-export interface User {
+import { UserBasicInfo } from "./shared";
+
+// 用户列表项
+export interface UserListItem extends UserBasicInfo {
   id: string;
-  name: string;
-  age: number;
-  gender: string;
-  location: string;
-  university: string;
-  major: string;
-  photos: string[];
-  introduction: string;
-  expectation: string;
 }
 
-// 筛选器状态类型
+// 用户详情
+export interface UserDetail extends UserBasicInfo {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 筛选器状态
 export interface FilterState {
   query: string;
-  searchType: "intro" | "expectation";
-  ageRange: [number, number];
+  searchType: "selfIntro" | "expectation";
+  minAge: number;
+  maxAge: number;
   gender: string;
-  location: string;
+  province: string;
+  city: string;
+  mbti: string;
+  grade: string;
 }
 
-// 联系请求类型
-export interface ContactRequest {
-  userId: string;
-  requesterId: string;
-  message: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt: Date;
+// 分页信息
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
-// 组件属性类型
-export interface UserFilterProps {
-  className?: string;
-}
-
-export interface UserListProps {
-  className?: string;
-}
-
-export interface UserDetailProps {
-  userId: string;
-  className?: string;
+// 用户列表响应
+export interface UserListResponse {
+  users: UserListItem[];
+  pagination: PaginationInfo;
 } 

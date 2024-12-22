@@ -52,7 +52,7 @@ export const baseRegisterSchema = z.object({
   selfIntro: z.string().min(10, '自我介绍至少10个字符').max(100, '自我介绍最多100个字符'),
   expectation: z.string().min(10, '期待描述至少10个字符').max(100, '期待描述最多100个字符'),
   wechat: z.string().min(6, '请输入有效的微信号'),
-  photos: z.array(z.any()).min(1, '请至少上传1张照片').max(3, '最多上传3张照片'),
+  photos: z.array(z.any()).min(1, '请至少上���1张照片').max(3, '最多上传3张照片'),
   verificationAnswer: z.string()
     .refine(
       (value) => VERIFICATION_ANSWERS.includes(value as typeof VERIFICATION_ANSWERS[number]),

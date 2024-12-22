@@ -1,92 +1,63 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
 import { ContactRequest } from "@/models/contact-request";
-import { ApiResponse, UserBasicInfo } from "@/types/shared";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { ApiResponse, UserDetail } from "@/types/shared";
 
 export async function GET(
-  req: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await connectDB();
+
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "请先登录" },
+        { success: false, error: "未登录" },
         { status: 401 }
       );
     }
 
-    await connectDB();
-
-    // 获取当前用户
-    const currentUser = await User.findOne({ email: session.user.email });
-    if (!currentUser) {
+    const user = await User.findById(params.id).select("-password");
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "用户不存在" },
         { status: 404 }
       );
     }
 
-    // 获取目标用户
-    const targetUser = await User.findById(params.id)
-      .select("-password -verificationAnswer");
+    const userDetail: UserDetail = {
+      id: user._id.toString(),
+      nickname: user.nickname,
+      gender: user.gender,
+      age: user.age,
+      province: user.province,
+      city: user.city,
+      mbti: user.mbti,
+      university: user.university,
+      major: user.major,
+      grade: user.grade,
+      selfIntro: user.selfIntro,
+      expectation: user.expectation,
+      wechat: user.wechat,
+      photos: user.photos,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString()
+    };
 
-    if (!targetUser) {
-      return NextResponse.json(
-        { success: false, error: "用户不存在" },
-        { status: 404 }
-      );
-    }
-
-    // 如果是查看自己的资料，直接返回
-    if (targetUser._id.toString() === currentUser._id.toString()) {
-      const response: ApiResponse<UserBasicInfo> = {
-        success: true,
-        data: {
-          nickname: targetUser.nickname,
-          age: targetUser.age,
-          gender: targetUser.gender,
-          location: targetUser.location || { province: "all", city: "all" },
-          mbti: targetUser.mbti,
-          university: targetUser.university,
-          major: targetUser.major,
-          grade: targetUser.grade,
-          selfIntro: targetUser.selfIntro,
-          expectation: targetUser.expectation,
-          wechat: targetUser.wechat,
-          photos: targetUser.photos,
-        }
-      };
-      return NextResponse.json(response);
-    }
-
-    // 如果是查看其他用户的资料，需要隐藏微信号
-    const response: ApiResponse<UserBasicInfo> = {
+    const response: ApiResponse<UserDetail> = {
       success: true,
-      data: {
-        nickname: targetUser.nickname,
-        age: targetUser.age,
-        gender: targetUser.gender,
-        location: targetUser.location || { province: "all", city: "all" },
-        mbti: targetUser.mbti,
-        university: targetUser.university,
-        major: targetUser.major,
-        grade: targetUser.grade,
-        selfIntro: targetUser.selfIntro,
-        expectation: targetUser.expectation,
-        wechat: "", // 隐藏微信号
-        photos: targetUser.photos,
-      }
+      data: userDetail
     };
 
     return NextResponse.json(response);
   } catch (error: any) {
     console.error("获取用户详情失败:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "获取用户详情失败" },
+      { success: false, error: "获取用户详情失败" },
       { status: 500 }
     );
   }
