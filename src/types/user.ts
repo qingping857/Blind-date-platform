@@ -28,12 +28,24 @@ export interface LoginBody {
 }
 
 // 注册表单数据
-export interface RegisterFormData extends UserBasicInfo {
+export interface RegisterFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  photos: File[];
-  verificationAnswer: string;
   verificationCode: string;
+  verificationAnswer: string;
+  nickname: string;
+  gender: "male" | "female";
+  age: number;
+  province: string;
+  city: string;
+  mbti?: string;
+  university: string;
+  major?: string;
+  grade: string;
+  selfIntro: string;
+  expectation: string;
+  wechat: string;
+  photos: File[];
 }
   

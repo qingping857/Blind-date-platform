@@ -43,6 +43,18 @@ const validateCity = (province: string, city: string) => {
   return provinceData.cities.some(c => c.value === city);
 };
 
+// 验证答案处理函数
+const normalizeAnswer = (answer: string) => {
+  return answer
+    .trim() // 去除首尾空格
+    .replace(/\s+/g, '') // 去除所有空格
+    .replace(/[，,。.、]/g, '') // 去除常见标点符号
+    .toLowerCase(); // 转换为小写
+};
+
+// 预处理验证答案列表
+const normalizedAnswers = VERIFICATION_ANSWERS.map(normalizeAnswer);
+
 // 基础注册表单验证
 export const registerSchema = z.object({
   email: z.string()
@@ -59,7 +71,7 @@ export const registerSchema = z.object({
   verificationAnswer: z.string()
     .min(1, "请输入验证答案")
     .refine(
-      (value) => VERIFICATION_ANSWERS.includes(value as typeof VERIFICATION_ANSWERS[number]),
+      (value) => normalizedAnswers.includes(normalizeAnswer(value)),
       {
         message: "请输入开营仪式上的十句话中的任意一句，需要完全匹配"
       }
@@ -67,12 +79,20 @@ export const registerSchema = z.object({
   nickname: z.string()
     .min(2, "昵称至少2个字符")
     .max(20, "昵称最多20个字符"),
-  gender: z.enum(["male", "female"]),
-  age: z.number()
+  gender: z.enum(["male", "female"], {
+    required_error: "请选择性别",
+    invalid_type_error: "性别选择无效",
+  }),
+  age: z.number({
+    required_error: "请输入年龄",
+    invalid_type_error: "年龄必须是数字",
+  })
     .min(18, "年龄必须大于等于18岁")
     .max(100, "年龄必须小于等于100岁"),
-  province: z.string(),
-  city: z.string(),
+  province: z.string()
+    .min(1, "请选择省份"),
+  city: z.string()
+    .min(1, "请选择城市"),
   mbti: z.string().optional(),
   university: z.string()
     .min(1, "请输入学校"),
@@ -93,12 +113,6 @@ export const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "两次输入的密码不一致",
   path: ["confirmPassword"],
-}).refine((data) => data.province !== "all", {
-  message: "请选择省份",
-  path: ["province"],
-}).refine((data) => data.city !== "all", {
-  message: "请选择城市",
-  path: ["city"],
 }).refine((data) => validateCity(data.province, data.city), {
   message: "请选择有效的城市",
   path: ["city"],

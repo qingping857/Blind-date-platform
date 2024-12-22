@@ -69,6 +69,15 @@ export default function ProfilePage() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      if (!province || province === "all" || !city || city === "all") {
+        toast({
+          title: "保存失败",
+          description: "请选择有效的��市",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const profileData: UserBasicInfo = {
         ...data,
         province,
@@ -95,6 +104,16 @@ export default function ProfilePage() {
       callbackUrl: "/auth",
       redirect: true
     });
+  };
+
+  const handleProvinceChange = (value: string) => {
+    setProvince(value);
+    form.setValue("province", value);
+  };
+
+  const handleCityChange = (value: string) => {
+    setCity(value);
+    form.setValue("city", value);
   };
 
   if (isLoading) {
@@ -189,10 +208,15 @@ export default function ProfilePage() {
               <CitySelect
                 province={province}
                 city={city}
-                onProvinceChange={setProvince}
-                onCityChange={setCity}
-                error={form.formState.errors.city?.message}
+                onProvinceChange={handleProvinceChange}
+                onCityChange={handleCityChange}
+                error={form.formState.errors.city?.message || form.formState.errors.province?.message}
               />
+              {(form.formState.errors.province || form.formState.errors.city) && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.province?.message || form.formState.errors.city?.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

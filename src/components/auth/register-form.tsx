@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,50 +39,101 @@ export function RegisterForm() {
       nickname: '',
       gender: 'male',
       age: 18,
-      city: '',
+      province: province,
+      city: city,
       university: '',
+      major: '',
       grade: '',
       selfIntro: '',
       expectation: '',
       wechat: '',
       photos: [],
       verificationAnswer: '',
+      mbti: '',
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof registerSchema>) => {
-    try {
-      setIsLoading(true);
-      
-      // 构建注册数据
-      const registerData = {
-        ...data,
-        province: province,
-        city: city
-      };
+  // 监听表单错误
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0) {
+      console.log('表单验证错误:', form.formState.errors);
+    }
+  }, [form.formState.errors]);
 
-      // 发送注册请求
+  const onSubmit = async (data: RegisterFormData) => {
+    try {
+      console.log('开始提交表单...');
+      
+      // 验证照片
+      if (selectedPhotos.length === 0) {
+        toast({
+          title: '请上传照片',
+          description: '至少需要上传一张照片',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsLoading(true);
+      const formData = new FormData();
+
+      // 添加所有非文件字段
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'photos' && key !== 'confirmPassword') {
+          console.log(`添加字段 ${key}:`, value);
+          formData.append(key, value?.toString() || '');
+        }
+      });
+
+      // 添加省市
+      formData.append('province', province);
+      formData.append('city', city);
+      
+      // 添加照片（确保文件对象有效）
+      console.log('添加照片到FormData...');
+      for (let i = 0; i < selectedPhotos.length; i++) {
+        const photo = selectedPhotos[i];
+        console.log(`处理第 ${i + 1} 张照片:`, {
+          name: photo.name,
+          type: photo.type,
+          size: photo.size
+        });
+        
+        // 验证文件对象是否有效
+        if (photo instanceof File && photo.size > 0) {
+          formData.append('photos', photo);
+        } else {
+          throw new Error('文件对象无效');
+        }
+      }
+
+      console.log('发送注册请求...');
       const response = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(registerData),
+        body: formData
       });
 
       const result = await response.json();
+      console.log('注册响应:', result);
 
-      if (!result.success) {
+      if (!response.ok) {
         throw new Error(result.error || "注册失败");
       }
 
+      toast({
+        title: '注册成功',
+        description: '正在为您登录...',
+      });
+
       // 注册成功后自动登录
+      console.log('开始自动登录...');
       const signInResult = await signIn("credentials", {
         email: data.email,
         password: data.password,
         redirect: false,
       });
 
+      console.log('登录结果:', signInResult);
       if (signInResult?.error) {
         throw new Error(signInResult.error);
       }
@@ -91,9 +142,10 @@ export function RegisterForm() {
       router.push("/square");
       
     } catch (error: any) {
+      console.error('注册失败:', error);
       toast({
         title: "注册失败",
-        description: error.message,
+        description: error.message || "发生未知错误，请稍后重试",
         variant: "destructive",
       });
     } finally {
@@ -156,13 +208,70 @@ export function RegisterForm() {
     }
   };
 
+  // 处理照片上传
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (selectedPhotos.length + files.length > 3) {
+      toast({
+        title: "上传失败",
+        description: "最多只能上传3张照片",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 验证文件大小
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "上传失败",
+        description: "每张照片不能超过5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 验证文件类型
+    const invalidFiles = files.filter(file => !['image/jpeg', 'image/png'].includes(file.type));
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "上传失败",
+        description: "只支持JPG和PNG格式的图片",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 先创建新的照片数组
+    const newPhotos = [...selectedPhotos, ...files];
+    // 然后一次性更新状态和表单值
+    setSelectedPhotos(newPhotos);
+    form.setValue('photos', newPhotos);
+  };
+
+  // 修改城市选择的处理函数
+  const handleProvinceChange = (value: string) => {
+    setProvince(value);
+    form.setValue('province', value);
+    // 当省份改变时，重置城市
+    setCity('all');
+    form.setValue('city', 'all');
+  };
+
+  const handleCityChange = (value: string) => {
+    setCity(value);
+    form.setValue('city', value);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>注册</CardTitle>
         <CardDescription>请填写以下信息完成注册</CardDescription>
       </CardHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <CardContent className="space-y-4">
           {/* 邮箱和验证码 */}
           <div className="grid grid-cols-2 gap-4">
@@ -174,6 +283,7 @@ export function RegisterForm() {
                   id="email"
                   type="email"
                   placeholder="请输入邮箱"
+                  autoComplete="email"
                 />
                 <Button
                   type="button"
@@ -278,10 +388,15 @@ export function RegisterForm() {
               <CitySelect
                 province={province}
                 city={city}
-                onProvinceChange={setProvince}
-                onCityChange={setCity}
+                onProvinceChange={handleProvinceChange}
+                onCityChange={handleCityChange}
                 error={form.formState.errors.city?.message}
               />
+              {(form.formState.errors.province || form.formState.errors.city) && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.province?.message || form.formState.errors.city?.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -411,19 +526,7 @@ export function RegisterForm() {
                 accept="image/jpeg,image/png"
                 multiple
                 className="hidden"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (selectedPhotos.length + files.length > 3) {
-                    toast({
-                      title: "上传失败",
-                      description: "最多只能上传3张照片",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  setSelectedPhotos(prev => [...prev, ...files]);
-                  form.setValue('photos', [...selectedPhotos, ...files]);
-                }}
+                onChange={handlePhotoUpload}
               />
               {selectedPhotos.length > 0 && (
                 <div className="grid grid-cols-3 gap-4">

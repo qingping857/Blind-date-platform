@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     // 检查邮箱是否已被注册
     const existingUser = await User.findOne({ email });
-    if (existingUser && existingUser.isEmailVerified) {
+    if (existingUser) {
       return NextResponse.json(
         { error: '该邮箱已被注册' },
         { status: 400 }
@@ -29,18 +29,17 @@ export async function POST(req: Request) {
 
     // 生成验证码
     const code = generateVerificationCode();
-    // 设置10分钟过期
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    
+    // 创建新的验证码记录
+    const verificationCode = new VerificationCode({
+      email,
+      code,
+      createdAt: new Date(),
+      expires: new Date(Date.now() + 10 * 60 * 1000)
+    });
 
-    // 存储验证码
-    await VerificationCode.findOneAndUpdate(
-      { email },
-      { 
-        code,
-        expires,
-      },
-      { upsert: true, new: true }
-    );
+    // 保存验证码
+    await verificationCode.save();
 
     // 发送验证码邮件
     await sendVerificationCode(email, code);
@@ -63,20 +62,46 @@ export async function POST(req: Request) {
 
 // 验证码校验函数
 export async function verifyCode(email: string, code: string): Promise<boolean> {
-  await connectDB();
-  
-  const verificationCode = await VerificationCode.findOne({
-    email,
-    code,
-    expires: { $gt: new Date() }
-  });
+  try {
+    console.log('开始验证码验证:', { email, code });
+    await connectDB();
+    
+    // 查找验证码记录
+    const verificationCode = await VerificationCode.findOne({
+      email: email.toLowerCase(),
+      code,
+      expires: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
 
-  if (!verificationCode) {
+    if (!verificationCode) {
+      console.log('验证失败: 未找到有效的验证码记录');
+      return false;
+    }
+
+    // 检查是否过期
+    const now = new Date();
+    const timeDiff = verificationCode.expires.getTime() - now.getTime();
+    
+    console.log('验证码状态:', {
+      createdAt: verificationCode.createdAt.toISOString(),
+      expires: verificationCode.expires.toISOString(),
+      now: now.toISOString(),
+      timeDiffMinutes: Math.floor(timeDiff / (1000 * 60))
+    });
+
+    if (timeDiff <= 0) {
+      console.log('验证失败: 验证码已过期');
+      await VerificationCode.deleteOne({ _id: verificationCode._id });
+      return false;
+    }
+
+    // 验证成功后删除验证码
+    console.log('验证成功，删除验证码记录');
+    await VerificationCode.deleteOne({ _id: verificationCode._id });
+
+    return true;
+  } catch (error) {
+    console.error('验证码验证过程出错:', error);
     return false;
   }
-
-  // 验证成功后删除验证码
-  await VerificationCode.deleteOne({ _id: verificationCode._id });
-
-  return true;
 } 
