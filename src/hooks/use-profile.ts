@@ -18,13 +18,13 @@ export function useProfile(): UseProfileReturn {
     try {
       setIsLoading(true);
       const response = await fetch("/api/user/profile");
+      const result: ApiResponse<UserBasicInfo> = await response.json();
       
-      if (!response.ok) {
-        throw new Error("获取资料失败");
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "获取资料失败");
       }
 
-      const data = await response.json();
-      setProfile(data);
+      setProfile(result.data);
     } catch (error: any) {
       console.error("获取资料失败:", error);
       toast({
@@ -48,12 +48,13 @@ export function useProfile(): UseProfileReturn {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        throw new Error("更新资料失败");
+      const result: ApiResponse<UserBasicInfo> = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "更新资料失败");
       }
 
-      const updatedData = await response.json();
-      setProfile(updatedData);
+      setProfile(result.data);
       
       toast({
         title: "更新成功",

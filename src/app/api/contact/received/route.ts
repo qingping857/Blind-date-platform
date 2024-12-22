@@ -1,74 +1,70 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { connectDB } from "@/lib/db";
+import { ContactRequest } from "@/models/contact-request";
+import { User } from "@/models/user";
+import { ApiResponse } from "@/types/shared";
 
 export async function GET() {
   try {
-    // 获取当前用户会话
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: "未登录" },
+        { success: false, error: "请先登录" },
         { status: 401 }
       );
     }
 
-    // 连接数据库
-    const { db } = await connectToDatabase();
+    await connectDB();
+
+    // 获取当前用户
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "用户不存在" },
+        { status: 404 }
+      );
+    }
 
     // 获取收到的申请列表
-    const requests = await db
-      .collection("contact_requests")
-      .aggregate([
-        {
-          $match: {
-            targetId: new ObjectId(session.user.id),
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "requesterId",
-            foreignField: "_id",
-            as: "requester",
-          },
-        },
-        {
-          $unwind: "$requester",
-        },
-        {
-          $project: {
-            _id: 0,
-            id: { $toString: "$_id" },
-            requesterId: {
-              id: { $toString: "$requester._id" },
-              nickname: "$requester.nickname",
-              age: "$requester.age",
-              gender: "$requester.gender",
-              university: "$requester.university",
-              location: "$requester.location",
-              wechat: "$requester.wechat",
-            },
-            targetId: { $toString: "$targetId" },
-            message: 1,
-            response: 1,
-            status: 1,
-            createdAt: 1,
-          },
-        },
-        {
-          $sort: { createdAt: -1 },
-        },
-      ])
-      .toArray();
+    const requests = await ContactRequest.find({ targetId: user._id })
+      .populate("requesterId", "-password -verificationAnswer")
+      .sort({ createdAt: -1 });
 
-    return NextResponse.json({ success: true, data: requests });
+    // 转换数据格式
+    const formattedRequests = requests.map(request => ({
+      id: request._id.toString(),
+      requesterId: {
+        id: request.requesterId._id.toString(),
+        nickname: request.requesterId.nickname,
+        age: request.requesterId.age,
+        gender: request.requesterId.gender,
+        university: request.requesterId.university,
+        location: request.requesterId.location,
+        wechat: request.requesterId.wechat,
+      },
+      targetId: request.targetId.toString(),
+      message: request.message,
+      response: request.response,
+      status: request.status,
+      createdAt: request.createdAt,
+    }));
+
+    const response: ApiResponse<typeof formattedRequests> = {
+      success: true,
+      data: formattedRequests,
+    };
+
+    return NextResponse.json(response);
   } catch (error: any) {
-    console.error("获取收到的申请列表失败:", error);
+    console.error("获取申请列表失败:", error);
     return NextResponse.json(
-      { success: false, error: "获取申请列表失败" },
+      { 
+        success: false, 
+        error: error.message || "获取申请列表失败",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { UserListItem, ApiResponse } from "@/types/shared";
+import { UserListItem, ApiResponse, UserListResponse } from "@/types/shared";
 
 export async function GET(req: Request) {
   try {
@@ -27,6 +27,8 @@ export async function GET(req: Request) {
     const city = searchParams.get("city") || "all";
     const mbti = searchParams.get("mbti") || "all";
     const grade = searchParams.get("grade") || "all";
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("pageSize") || "20");
 
     // 3. 构建查询条件
     const filter: any = {
@@ -34,7 +36,7 @@ export async function GET(req: Request) {
       age: { $gte: minAge, $lte: maxAge },
     };
 
-    // 添加性别筛选
+    // 添��性别筛选
     if (gender !== "all") {
       filter.gender = gender;
     }
@@ -66,10 +68,15 @@ export async function GET(req: Request) {
     await connectDB();
 
     // 5. 查询用户列表
-    const users = await User.find(filter)
-      .select("-password -verificationAnswer")
-      .sort({ updatedAt: -1 })
-      .limit(50);
+    const skip = (page - 1) * pageSize;
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select("-password -verificationAnswer")
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+      User.countDocuments(filter),
+    ]);
 
     // 6. 转换用户数据
     const userList: UserListItem[] = users.map(user => ({
@@ -88,10 +95,18 @@ export async function GET(req: Request) {
       photos: user.photos,
     }));
 
-    // 7. 返回用户列表
-    const response: ApiResponse<UserListItem[]> = {
+    // 7. 返回用户列表和分页信息
+    const response: ApiResponse<UserListResponse> = {
       success: true,
-      data: userList,
+      data: {
+        users: userList,
+        pagination: {
+          total,
+          page,
+          pageSize,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      },
     };
 
     return NextResponse.json(response);

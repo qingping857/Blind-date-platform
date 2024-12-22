@@ -86,4 +86,18 @@ export interface ContactRequestListItem {
   response?: string;
   respondedAt?: string;
   createdAt: string;
+}
+
+// 分页信息类型
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+// 用户列表响应类型
+export interface UserListResponse {
+  users: UserListItem[];
+  pagination: PaginationInfo;
 } 

@@ -42,29 +42,35 @@ export default function ContactPage() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const [receivedRes, sentRes] = await Promise.all([
-          fetch("/api/contact/received"),
-          fetch("/api/contact/sent")
-        ]);
-
-        if (!receivedRes.ok || !sentRes.ok) {
-          throw new Error("获取申请列表失败");
+        setIsLoading(true);
+        
+        // 分别获取收到和发出的申请
+        const receivedRes = await fetch("/api/contact/received");
+        const receivedData = await receivedRes.json();
+        
+        if (!receivedRes.ok) {
+          throw new Error(receivedData.error || "获取收到的申请失败");
+        }
+        
+        const sentRes = await fetch("/api/contact/sent");
+        const sentData = await sentRes.json();
+        
+        if (!sentRes.ok) {
+          throw new Error(sentData.error || "获取发出的申请失败");
         }
 
-        const receivedData = await receivedRes.json();
-        const sentData = await sentRes.json();
-
+        // 更新状态
         if (receivedData.success) {
           setReceivedRequests(receivedData.data);
         }
         if (sentData.success) {
           setSentRequests(sentData.data);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("获取申请列表失败:", error);
         toast({
           title: "获取申请列表失败",
-          description: "请刷新页面重试",
+          description: error.message || "请刷新页面重试",
           variant: "destructive",
         });
       } finally {
@@ -168,7 +174,7 @@ export default function ContactPage() {
                           {request.requesterId.gender === "male" ? "男" : "女"}
                         </Badge>
                         <span className="text-muted-foreground">
-                          {request.requesterId.age}���
+                          {request.requesterId.age}岁
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
