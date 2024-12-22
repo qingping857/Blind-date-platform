@@ -15,6 +15,7 @@ import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "next-auth/react";
 import { ProfileImageUpload } from "@/components/user/profile-image-upload";
+import { useToast } from "@/hooks/use-toast";
 
 type FormData = z.infer<typeof userProfileSchema>;
 
@@ -23,7 +24,8 @@ const MBTI_TYPES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENF
 
 export default function ProfilePage() {
   const profileData: UseProfileReturn = useProfile();
-  const { isLoading, profile, fetchProfile } = profileData;
+  const { isLoading, profile, fetchProfile, updateProfile } = profileData;
+  const { toast } = useToast();
   
   const form = useForm<FormData>({
     resolver: zodResolver(userProfileSchema),
@@ -50,8 +52,32 @@ export default function ProfilePage() {
   }, [profile, form]);
 
   const onSubmit = async (data: FormData) => {
-    // 暂时注释掉 updateProfile，因为我们现在只实现查看功能
-    // await updateProfile(data);
+    try {
+      // 确保所有必填字段都有值
+      const profileData: UserProfile = {
+        nickname: data.nickname || "",
+        age: data.age || 18,
+        gender: data.gender || "male",
+        city: data.city || "",
+        mbti: data.mbti || "",
+        university: data.university || "",
+        major: data.major || "",
+        grade: data.grade || "",
+        selfIntro: data.selfIntro || "",
+        expectation: data.expectation || "",
+        wechat: data.wechat || "",
+        photos: data.photos || [],
+      };
+
+      await updateProfile(profileData);
+      toast({
+        title: "保存成功",
+        description: "个人资料已更新",
+      });
+    } catch (error) {
+      // 错误已经在 updateProfile 中处理
+      console.error("保存失败:", error);
+    }
   };
 
   const handleLogout = async () => {
