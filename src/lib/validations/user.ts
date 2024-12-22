@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { locationData } from '@/components/shared/city-select';
 
 export const VERIFICATION_ANSWERS = [
   "真正重要的东西，往往需要重复重复再重复，才能够被人消化吸收再利用",
@@ -13,15 +14,37 @@ export const VERIFICATION_ANSWERS = [
   "越参与，越收获"
 ] as const;
 
+// 验证城市是否有效
+const isValidCity = (province: string, city: string) => {
+  if (!province || province === 'all' || !city || city === 'all') return false;
+
+  // 检查直辖市
+  if (locationData.municipalities.some(m => m.value === province)) {
+    return province === city;
+  }
+
+  // 检查特别行政区
+  if (locationData.specialRegions.some(r => r.value === province)) {
+    return province === city;
+  }
+
+  // 检查普通省份
+  const provinceData = locationData.provinces[province as keyof typeof locationData.provinces];
+  if (!provinceData) return false;
+
+  return provinceData.cities.some(c => c.value === city);
+};
+
 // 基础注册schema（不包含密码确认）
-const baseRegisterSchema = z.object({
+export const baseRegisterSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
   verificationCode: z.string().length(6, '验证码必须是6位数字'),
   password: z.string().min(6, '密码至少6个字符'),
   nickname: z.string().min(2, '昵称至少2个字符').max(20, '昵称最多20个字符'),
   gender: z.enum(['male', 'female'], { required_error: '请选择性别' }),
   age: z.number().min(18, '年龄必须大于18岁').max(100, '年龄必须小于100岁'),
-  city: z.string().min(2, '请输入有效的城市名'),
+  province: z.string().min(1, '请选择省份'),
+  city: z.string().min(1, '请选择城市'),
   mbti: z.string().optional(),
   university: z.string().min(2, '请输入有效的学校名称'),
   major: z.string().optional(),
@@ -37,10 +60,17 @@ const baseRegisterSchema = z.object({
         message: '请输入开营仪式上的十句话中的任意一句，需要完全匹配'
       }
     ),
-});
+}).refine(
+  (data) => isValidCity(data.province, data.city),
+  {
+    message: '请选择有效的城市',
+    path: ['city']
+  }
+);
 
 // 前端使用的完整注册schema（包含密码确认）
-export const registerSchema = baseRegisterSchema.extend({
+export const registerSchema = z.object({
+  ...baseRegisterSchema.shape,
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "两次输入的密码不一致",
@@ -57,10 +87,8 @@ export const userProfileSchema = z.object({
   gender: z.enum(["male", "female"], {
     required_error: "请选择性别",
   }),
-  location: z.object({
-    province: z.string().min(1, "请选择省份"),
-    city: z.string().min(1, "请选择城市"),
-  }),
+  province: z.string().min(1, "请选择省份"),
+  city: z.string().min(1, "请选择城市"),
   mbti: z.string().optional(),
   university: z.string().min(2, "学校名称至少2个字符").max(50, "学校名称最多50个字符"),
   major: z.string().optional(),
@@ -69,5 +97,11 @@ export const userProfileSchema = z.object({
   expectation: z.string().min(10, "期待至少10个字符").max(500, "期待最多500个字符"),
   wechat: z.string().min(1, "请输入微信号"),
   photos: z.array(z.string()).min(1, "至少上传1张照片").max(3, "最多上传3张照片"),
-});
+}).refine(
+  (data) => isValidCity(data.province, data.city),
+  {
+    message: '请选择有效的城市',
+    path: ['city']
+  }
+);
   
