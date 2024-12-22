@@ -1,17 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile } from "fs/promises";
-import { join } from "path";
-import { v4 as uuidv4 } from "uuid";
-
-// 配置允许的文件类型
-const ALLOWED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp"
-];
+import { uploadPhotos } from "@/lib/upload";
 
 // 配置最大文件大小 (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -32,44 +22,15 @@ export async function POST(req: Request) {
     const files = formData.getAll("files") as File[];
 
     // 3. 验证文件
-    for (const file of files) {
-      // 检查文件类型
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        return NextResponse.json(
-          { error: "不支持的文件类型" },
-          { status: 400 }
-        );
-      }
-
-      // 检查文件大小
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: "文件大小超过限制" },
-          { status: 400 }
-        );
-      }
+    if (!files || files.length === 0) {
+      return NextResponse.json(
+        { error: "请选择要上传的文件" },
+        { status: 400 }
+      );
     }
 
-    // 4. 保存文件并生成 URL
-    const urls = await Promise.all(
-      files.map(async (file) => {
-        // 生成唯一文件名
-        const ext = file.name.split(".").pop();
-        const fileName = `${uuidv4()}.${ext}`;
-        
-        // 确保上传目录存在
-        const uploadDir = join(process.cwd(), "public", "uploads");
-        await ensureDir(uploadDir);
-        
-        // 保存文件
-        const filePath = join(uploadDir, fileName);
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await writeFile(filePath, buffer);
-
-        // 返回文件的访问 URL
-        return `/uploads/${fileName}`;
-      })
-    );
+    // 4. 上传文件并获取URL
+    const urls = await uploadPhotos(files);
 
     // 5. 返回文件 URL
     return NextResponse.json({ urls });
@@ -80,16 +41,5 @@ export async function POST(req: Request) {
       { error: error.message || "文件上传失败" },
       { status: 500 }
     );
-  }
-}
-
-// 确保目录存在的辅助函数
-async function ensureDir(dir: string) {
-  try {
-    await import("fs/promises").then(fs => fs.mkdir(dir, { recursive: true }));
-  } catch (error) {
-    if ((error as any).code !== "EEXIST") {
-      throw error;
-    }
   }
 } 
